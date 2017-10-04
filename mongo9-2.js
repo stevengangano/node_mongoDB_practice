@@ -29,7 +29,7 @@ var app = express();
 var bodyParser = require('body-parser');
 app.use(bodyParser.json());
 
-app.get('todos/:id', (req, res) => {
+app.get('/todos/:id', (req, res) => {
 	//req.params = { "_id": toyota }
 	//req.params.id = toyota 
 	//:id = req.params.id
@@ -47,8 +47,20 @@ app.get('todos/:id', (req, res) => {
 		}
 			//this sends the data
 			res.send({todo: todo});
+			//Displays:
+			//	{
+			//	    "todo": {
+			//	        "_id": "59d45b802605996165eba287",
+			//	        "name": "Stebs",
+			//	        "text": "Hello there",
+			//	        "__v": 0,
+			//	        "completedAt": null,
+			//	        "completed": false
+			//	    }
+			//	}
+			console.log(todo)
 	}).catch((error) => {
-		console.log('none');
+		res.status(404).send();
 	});
 
 });

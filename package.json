@@ -10,8 +10,10 @@
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.15.2",
+    "ejs": "^2.5.7",
     "express": "^4.16.1",
     "lodash": "^4.17.4",
+    "method-override": "^2.3.10",
     "mongodb": "^2.2.5",
     "mongoose": "^4.5.9"
   }
