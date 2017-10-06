@@ -1,4 +1,5 @@
-//POSTING DATA
+
+//Deleting Data
 
 var _ = require('lodash');
 var {mongoose} = require('./db/mongoose.js')
@@ -16,6 +17,7 @@ app.set("view engine", "ejs");
 // parse application/x-www-form-urlencoded 
 app.use(bodyParser.urlencoded({ extended: false }))
 
+//Needed to delete
 var methodOverride = require("method-override")
 app.use(methodOverride("_method"));
 
@@ -45,19 +47,14 @@ app.get("/todos/new", function(req, res) {
 //Go back to Robomongo. Data is in todos collection
                                                                                                                                         
 app.post('/todos', (req, res) => {
+	var body = _.pick(req.body, ['text', 'name']);
 	
 	//Create a variable for the data
 	//This displays whatever is posted from postman
 	//For example: { "text" : "This is from postman" }
 	//Check robomongo to see if object was posted to the collection
 	//console.log(req.body) = { "text" : "This is from postman" }
-	var todo = new ToDo ({
-		//This grabs the text property value
-		//required
-		name: req.body.name,
-		//required
-		text: req.body.text
-	});
+	var todo = new ToDo (body);
 
 	//Saves the above to the database
 	todo.save().then((data) => {
@@ -75,7 +72,7 @@ app.get("/todos/:id", function(req,res){
 	ToDo.findById(req.params.id, function(err, todo){
 		if(err){
 			} else {
-				res.render("show.ejs", {data: todo});
+				res.render("show.ejs", {tododata: todo});
 			}
 	});	
 });
@@ -83,13 +80,24 @@ app.get("/todos/:id", function(req,res){
 
 //Delete a campground
 //to delete all campgrouds "db.campgrounds.drop()"
+// app.delete("/todos/:id", function(req, res){
+// 	ToDo.findByIdAndRemove(req.params.id, function(err){
+// 		if(err) {
+// 			res.redirect("/todos");
+// 		} else {
+// 			res.redirect("/todos");
+// 		}
+// 	});
+// });
+
+//or
+
+//Delete a campground
 app.delete("/todos/:id", function(req, res){
-	ToDo.findByIdAndRemove(req.params.id, function(err){
-		if(err) {
-			res.redirect("/todos");
-		} else {
-			res.redirect("/todos");
-		}
+	ToDo.findByIdAndRemove(req.params.id).then(() => {
+		res.redirect("/todos")
+	}).catch((error) => {
+		res.send(error);
 	});
 });
 

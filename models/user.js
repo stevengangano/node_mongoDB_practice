@@ -1,16 +1,14 @@
-var mongoose = require('mongoose');
+var mongoose = require("mongoose");
+var passportLocalMongoose = require("passport-local-mongoose");
 
-var User = mongoose.model ('User', {
-	email: {
-		type: String,
-		required: true,
-		//Must input 1 character
-		minlength: 1,
-		//removes any white space like below
-		trim: true
-	}
+var UserSchema = new mongoose.Schema({
+	username: String,
+	password: String
 });
 
-module.exports = {
-	User: User
-}
+//Adds methods to the UserSchema
+UserSchema.plugin(passportLocalMongoose);
+
+//from app.js
+module.exports = mongoose.model("User", UserSchema)
+
