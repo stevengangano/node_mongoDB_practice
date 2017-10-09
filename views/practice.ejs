@@ -1,17 +1,38 @@
 <% include partials/header %>	
 
+<p> <%=  currentUser.username.toUpperCase() %> </p>
+
 <h6><a href="/todos/new" style="margin-left: 20px;"> Add new item </a> </h6>
 <div class="row" style="margin-left: 20px;">
 	<% todos.forEach(function(sometodo){ %>
 		<div class="peopleImage">
 			<div class="peopleMargin overlay">
 
-				<form action="/todos/<%= sometodo._id %>?_method=DELETE" method="POST">
-				<button class> Delete </button>	
-				</form>
+				<% if(currentUser && sometodo.author.id.equals(currentUser._id)) { %>
 
-				<a href="/todos/<%= sometodo._id %>"> Show </a>
-				<p> <%= sometodo.name %>, <%= sometodo.text %></p>
+				<ul style="display: inline; list-style-type: none">
+
+					<li>
+						<form action="/todos/<%= sometodo._id %>?_method=DELETE" method="POST">
+						<button class> Delete </button>	
+						</form>
+					</li>
+
+					<li>
+						<a href="/todos/<%= sometodo._id %>/edit"><button>
+						 Edit </button>	
+						</a>
+					</li>
+
+				<% } %>
+
+					<li>
+						<a href="/todos/<%= sometodo._id %>"><button> Show </button> </a>
+					</li>
+
+						<p> <%= sometodo.name %>, <%= sometodo.text %></p>
+				
+				</ul>
 
 			</div>
 	<% }); %>

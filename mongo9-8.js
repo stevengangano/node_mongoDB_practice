@@ -8,11 +8,12 @@ var passportLocalMongoose = require ('passport-local-mongoose');
 
 
 var _ = require('lodash');
+var mongoose = require('mongoose')
 var {mongoose} = require('./db/mongoose.js')
 const {MongoClient, ObjectID } = require('mongodb');
 
 //Models
-var {ToDo} = require('./models/todo.js');
+var ToDo = require('./models/todo.js');
 var User = require('./models/user.js');
 
 //takes JSON and turns it into an object
@@ -42,6 +43,11 @@ passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
+//ADDING middleware “{currentUser: req.user}” to all routes, so it can be used in the navbar
+app.use(function(req, res, next) { // this makes this available on every route
+	res.locals.currentUser = req.user; // whatever is connected to “res.locals” is available in our template
+	next();
+});
 
 app.get('/', (req, res) => {
 	res.render('home.ejs')
@@ -57,7 +63,6 @@ app.get('/todos', isLoggedIn, (req,res) => {
 	ToDo.find().then((todos) => {
 		//displays all todos in postman
 		res.render("practice.ejs", {todos: todos});
-		
 	}, (error) => {
 		res.send(error);
 	})
@@ -75,24 +80,36 @@ app.get("/todos/new", function(req, res) {
 //For example: { "text" : "This is from postman" }
 //Go back to Robomongo. Data is in todos collection
                                                                                                                                         
-app.post('/todos', (req, res) => {
-	console.log(req.body.email)
-	var body = _.pick(req.body, ['text', 'name']);
-	
+app.post('/todos', isLoggedIn, (req, res) => {
+
+	// var body = _.pick(req.body, ['text', 'name']);
+	//var todo = new ToDo(body)
+
 	//Create a variable for the data
 	//This displays whatever is posted from postman
 	//For example: { "text" : "This is from postman" }
 	//Check robomongo to see if object was posted to the collection
 	//console.log(req.body) = { "text" : "This is from postman" }
-	var todo = new ToDo (body);
+	var todo = new ToDo ({
+		text: req.body.text,
+		name: req.body.name,
+		//***Needed for edit/delete authorization***
+		author: {
+			id: req.user.id,
+			username: req.user.username
+		}
+	});
 
 	//Saves the above to the database
 	todo.save().then((data) => {
 		res.redirect("/todos");	
-		
+
+		//{ _id: 5994fcb22e9350afa53e3d3b, username: 'stebs', __v: 0 }
+		console.log(req.user._id)
+		console.log(data.author.id)
 	}, (error) => {	
 		//httpstatuses.com
-		res.send(error);
+		res.send(error.name);
 	});
 });
 
@@ -107,14 +124,55 @@ app.get("/todos/:id", function(req,res){
 	});	
 });
 
+//Edit Form
+app.get("/todos/:id/edit", checkOwnership, (req, res) => {
+	var id = req.params.id
+	ToDo.findById(id, (error, foundToDo) => {
+		if(error) {
+			console.log(error)	
+		}
+			res.render("edit.ejs", {foundToDo: foundToDo})
+	})
+});
+
+//Updates Edit form
+app.put('/todos/:id', checkOwnership, (req, res) => {
+	var id = req.params.id
+	//only updates properties with text and name
+	var body = _.pick(req.body, ['text', 'name']);
+	
+
+	if (!ObjectID.isValid(id)) {
+		//.send() = empty body
+		return res.status(404).send();
+	}
+	
+	//mongoose way to update {new:true} = returnOriginal: false
+	ToDo.findByIdAndUpdate(id, {$set: body}, {$new: true} ).then((todo) => {
+		if(!todo) {
+			return res.status(404).send();
+		}
+		//displays whole object with updated content
+			res.redirect("/todos")
+			console.log(req.body.name)
+			console.log(req.body.text)
+	}).catch((error) => {
+		res.status(400).send();
+	});
+
+});
+
+
 //Delete a campground
-app.delete("/todos/:id", function(req, res){
+app.delete("/todos/:id", checkOwnership, function(req, res){
 	ToDo.findByIdAndRemove(req.params.id).then(() => {
 		res.redirect("/todos")
 	}).catch((error) => {
 		res.send(error);
 	});
 });
+
+
 
 //Authorization Routes
 
@@ -130,13 +188,11 @@ app.post("/register", function(req,res){
 	User.register(newUser, req.body.password, function(err, user){
 		//if unnable to register, redirect to register.ejs
 		if(err) {
-			console.log(err);
-			
+			console.log(err);	
 		} 
 		//else you have logged in, redirect campgrounds page
 		passport.authenticate("local")(req, res, function(){
 			res.redirect("/todos");
-			console.log(user)
 		});
 	});
 });
@@ -165,6 +221,9 @@ app.get('/logout', function(req, res) {
 	res.redirect("/");
 });
 
+
+//***Middleware****
+
 //middleware to check if user is logged in
 //add to any route you need user to be logged in
 function isLoggedIn(req, res, next) {
@@ -172,6 +231,29 @@ function isLoggedIn(req, res, next) {
 		return next(); // refers to everything after isLoggedIn function
 	}
 	res.redirect('/unauthenticated'); // else redirect to login page if not logged in 
+}
+
+
+//middleware to check edit, update and destroy ownership
+function checkOwnership(req, res, next){
+	// is User logged in?
+	if (req.isAuthenticated){
+				//if yes, then...
+				ToDo.findById(req.params.id, function(err, user) { // finds all Blogs in database
+					if(err){
+						res.direct('back');
+					} else {
+						// does the user own the blog? If yes....
+						if (user.author.id.equals(req.user._id)) {
+						next();
+					} else {
+						// If no....
+						res.send('You do not have permission to do that')
+					}
+
+					}
+			});
+		}
 }
 
 //Runs on PORT localhost:27017

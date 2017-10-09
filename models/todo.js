@@ -1,8 +1,6 @@
 var mongoose = require('mongoose');
 
-//ToDo is the collection name
-//Step 1: Create a model
-var ToDo = mongoose.model ('ToDo', {
+var ToDoSchema = new mongoose.Schema ({
 	text: {
 		type: String,
 		//cannot be blank. a value must exist
@@ -21,16 +19,15 @@ var ToDo = mongoose.model ('ToDo', {
 		//removes any white space like below
 		trim: true
 	},
-	completed: {
-		type: Boolean,
-		default: false
-	},
-	completedAt: {
-		type: Number,	
-		default: null
-	}
+	author: {
+		id: {
+			type: mongoose.Schema.Types.ObjectId, //stores comment ID, not actual comment
+			ref: "User" //name of Model
+		},
+		username: String
+	}		
 });
 
-module.exports = {
-	ToDo: ToDo
-}
+module.exports = mongoose.model("ToDo", ToDoSchema)
+
+

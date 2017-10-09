@@ -1,5 +1,10 @@
 <!-- Delete Photo -->
+<% if(currentUser && tododata.author.id.equals(currentUser._id)) { %>
+
 <form action="/todos/<%= tododata._id %>?_method=DELETE" method="POST">
 <button class> Delete </button>	
 </form>
+
+<% } %>
+
 <p> <%= tododata.name %>, <%= tododata.text %></p>
